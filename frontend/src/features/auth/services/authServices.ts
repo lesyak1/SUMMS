@@ -1,13 +1,16 @@
+import { generateUsername } from "unique-username-generator";
 import { supabase } from "../../../lib/supabase"
 
 export const authService = {
-    async register(email: string, password: string, name: string) {
+    async register(email: string, password: string, firstName: string, lastName: string) {
         const { data, error } = await supabase.auth.signUp({
             email,
             password,
             options: {
                 data: {
-                    name
+                    firstName,
+                    lastName,
+                    username: generateUsername(" ", 2)
                 }
             }
         })

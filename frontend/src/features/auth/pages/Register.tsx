@@ -7,7 +7,8 @@ import { useNavigate } from "react-router-dom";
 
 
 const Register = () => {
-    const [name, setName] = useState("")
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
@@ -29,18 +30,27 @@ const Register = () => {
         }
 
         try {
-            const { session } = await authService.register(
+            const data = await authService.register(
                 email,
                 password,
-                name
+                firstName,
+                lastName
             );
-
-            if (!session) {
+            if (data.user && !data.session) {
                 navigate("/confirm-email", {
                     state: { email }
                 });
                 return;
             }
+            if(data.session) {
+                navigate("/");
+                return;
+            }
+            if(!data.user) {
+                setError("Account with this email already exists.");
+                return;
+            }
+
 
         } catch (err: any) {
             setError(err.message || "Registration failed.");
@@ -59,9 +69,15 @@ const Register = () => {
         >
             <form onSubmit={handleSubmit} className="space-y-4">
                 <Input
-                    placeholder="Name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    placeholder="First Name"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    required
+                />
+                <Input
+                    placeholder="Last Name"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
                     required
                 />
                 <Input
