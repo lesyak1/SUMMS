@@ -1,9 +1,32 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../features/auth/context/AuthContext';
 import { supabase } from '../lib/supabase';
+import api from '../lib/api';
 
 const DashboardPage = () => {
     const { user, profile } = useAuth();
+    const [recommendations, setRecommendations] = useState<any[]>([]);
+    const [loadingRecommendation, setLoadingRecommendation] = useState(false);
+
+    useEffect(() => {
+        const loadRecommendations = async () => {
+            if (profile?.preferredMobility && profile?.city) {
+                setLoadingRecommendation(true);
+                try {
+                    // Fetch vehicles matching the user's preferred mobility and ensure they are available
+                    const res = await api.get(`/vehicles?type=${profile.preferredMobility}&availability=true`);
+                    setRecommendations(res.data);
+                } catch (e) {
+                    console.error('Failed to load recommendations', e);
+                } finally {
+                    setLoadingRecommendation(false);
+                }
+            }
+        };
+
+        if (profile) loadRecommendations();
+    }, [profile]);
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
@@ -17,6 +40,23 @@ const DashboardPage = () => {
             </div>
 
             <p>Logged in as: {user?.email} ({profile?.role || 'CLIENT'})</p>
+
+            {/* Travel Recommendations Section */}
+            {profile?.preferredMobility && profile?.city && (
+                <div className="card" style={{ marginTop: '20px', borderLeft: '4px solid #0066cc', background: '#eaf3fc' }}>
+                    <h3 style={{ margin: '0 0 10px 0' }}>✨ Personalized Travel Recommendations</h3>
+                    {loadingRecommendation ? (
+                        <p>Loading your recommendations...</p>
+                    ) : recommendations.length > 0 ? (
+                        <p>
+                            Good news! We found <strong>{recommendations.length} available {profile.preferredMobility.toLowerCase()}s</strong> in <strong>{profile.city}</strong> based on your preferences.
+                            <Link to="/vehicles" style={{ marginLeft: '10px' }}>View them now</Link>
+                        </p>
+                    ) : (
+                        <p>Currently, there is no availability for {profile.preferredMobility.toLowerCase()}s in {profile.city}. Try checking other vehicle types.</p>
+                    )}
+                </div>
+            )}
 
             <div className="grid" style={{ marginTop: 30 }}>
                 <div className="card">

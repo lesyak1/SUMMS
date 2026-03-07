@@ -1,5 +1,6 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../../../features/auth/context/AuthContext";
+import Navbar from "../Navbar/Navbar";
 
 export const RoleProtectedRoute = ({
     children,
@@ -21,5 +22,10 @@ export const RoleProtectedRoute = ({
         return <Navigate to="/" replace />;
     }
 
-    return <>{children}</>;
+    return (
+        <>
+            <Navbar />
+            {children}
+        </>
+    );
 }

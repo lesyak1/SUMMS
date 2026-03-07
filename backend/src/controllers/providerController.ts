@@ -3,6 +3,15 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+export const getProviders = async (req: Request, res: Response) => {
+    try {
+        const providers = await prisma.mobilityProvider.findMany();
+        res.json(providers);
+    } catch (error: any) {
+        res.status(500).json({ error: 'Failed to fetch providers', details: error.message });
+    }
+};
+
 export const addVehicle = async (req: Request, res: Response) => {
     try {
         const { providerId, costPerMinute, type, model } = req.body;

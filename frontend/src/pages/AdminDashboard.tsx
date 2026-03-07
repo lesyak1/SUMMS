@@ -4,34 +4,36 @@ import api from '../lib/api';
 const AdminDashboard = () => {
     const [rentals, setRentals] = useState<any>(null);
     const [gateway, setGateway] = useState<any>(null);
+    const [users, setUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
-    const [roleUpdate, setRoleUpdate] = useState({ userId: '', role: 'CLIENT' });
-
     useEffect(() => {
-        const fetchAnalytics = async () => {
+        const loadData = async () => {
             try {
-                const [rRes, gRes] = await Promise.all([
+                const [rRes, gRes, uRes] = await Promise.all([
                     api.get('/admin/analytics/rentals'),
-                    api.get('/admin/analytics/gateway')
+                    api.get('/admin/analytics/gateway'),
+                    api.get('/admin/users')
                 ]);
                 setRentals(rRes.data);
                 setGateway(gRes.data.summary);
+                setUsers(uRes.data);
             } catch (e: any) {
                 console.error(e);
             } finally {
                 setLoading(false);
             }
         };
-        fetchAnalytics();
+        loadData();
     }, []);
 
-    const handleUpdateRole = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleUpdateRole = async (userId: string, newRole: string) => {
         try {
-            await api.put(`/admin/users/${roleUpdate.userId}/role`, { role: roleUpdate.role });
-            alert('Role updated successfully');
-            setRoleUpdate({ userId: '', role: 'CLIENT' });
+            await api.put(`/admin/users/${userId}/role`, { role: newRole });
+
+            // Re-fetch users to reflect changes
+            const uRes = await api.get('/admin/users');
+            setUsers(uRes.data);
         } catch (e: any) {
             alert(e.response?.data?.error || e.message);
         }
@@ -62,22 +64,40 @@ const AdminDashboard = () => {
                 </div>
             </div>
 
-            <form onSubmit={handleUpdateRole} className="form-card" style={{ marginTop: 30 }}>
-                <h3>Manage Roles</h3>
-                <div className="input-group">
-                    <label>User ID</label>
-                    <input value={roleUpdate.userId} onChange={e => setRoleUpdate({ ...roleUpdate, userId: e.target.value })} required />
+            <div style={{ marginTop: 40 }}>
+                <h3>User Management</h3>
+                <div style={{ overflowX: 'auto' }}>
+                    <table className="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Assign Role</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {users.map(u => (
+                                <tr key={u.id}>
+                                    <td>{u.firstName} {u.lastName}</td>
+                                    <td>{u.email}</td>
+                                    <td><strong>{u.role}</strong></td>
+                                    <td>
+                                        <select
+                                            value={u.role}
+                                            onChange={(e) => handleUpdateRole(u.id, e.target.value)}
+                                        >
+                                            <option value="CLIENT">Client</option>
+                                            <option value="MOBILITY_PROVIDER">Mobility Provider</option>
+                                            <option value="ADMIN">Admin</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
-                <div className="input-group">
-                    <label>New Role</label>
-                    <select value={roleUpdate.role} onChange={e => setRoleUpdate({ ...roleUpdate, role: e.target.value })}>
-                        <option value="CLIENT">Client</option>
-                        <option value="MOBILITY_PROVIDER">Mobility Provider</option>
-                        <option value="ADMIN">Admin</option>
-                    </select>
-                </div>
-                <button type="submit">Update Role</button>
-            </form>
+            </div>
         </div>
     );
 };

@@ -8,7 +8,8 @@ const AccountPage = () => {
         firstName: '',
         lastName: '',
         username: '',
-        city: ''
+        city: '',
+        preferredMobility: 'CAR'
     });
     const [msg, setMsg] = useState('');
 
@@ -18,7 +19,8 @@ const AccountPage = () => {
                 firstName: profile.firstName || '',
                 lastName: profile.lastName || '',
                 username: profile.username || '',
-                city: profile.city || ''
+                city: profile.city || '',
+                preferredMobility: profile.preferredMobility || 'CAR'
             });
         }
     }, [profile]);
@@ -61,6 +63,14 @@ const AccountPage = () => {
                 <div>
                     <label>City</label><br />
                     <input value={formData.city} onChange={e => setFormData({ ...formData, city: e.target.value })} />
+                </div>
+                <div>
+                    <label>Preferred Mobility</label><br />
+                    <select value={formData.preferredMobility} onChange={e => setFormData({ ...formData, preferredMobility: e.target.value })}>
+                        <option value="CAR">Car</option>
+                        <option value="BIKE">Bike</option>
+                        <option value="SCOOTER">Scooter</option>
+                    </select>
                 </div>
                 <button type="submit" style={{ marginTop: 10 }}>Save Profile</button>
             </form>

@@ -3,23 +3,28 @@ import api from '../lib/api';
 
 const ProviderDashboard = () => {
     const [vehicles, setVehicles] = useState<any[]>([]);
+    const [providers, setProviders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
     const [newVehicle, setNewVehicle] = useState({
-        providerId: 'e2a874b2-abcd-1234-abcd-9876543210ab', // Should come from profile or be dynamic, but since we manually seed, we'll ask user to input their provider ID for simplicity, or we default it.
+        providerId: '',
         costPerMinute: 0,
         type: 'CAR',
         model: ''
     });
 
-    const fetchVehicles = async () => {
+    const fetchData = async () => {
         try {
-            // Typically a provider only sees their own vehicles.
-            // Since our search is public, let's just fetch all and let provider edit/delete.
-            // In a real app we'd filter by providerId.
-            const res = await api.get('/vehicles');
-            setVehicles(res.data);
+            const [vRes, pRes] = await Promise.all([
+                api.get('/vehicles'),
+                api.get('/provider/profiles')
+            ]);
+            setVehicles(vRes.data);
+            setProviders(pRes.data);
+            if (pRes.data.length > 0) {
+                setNewVehicle(prev => ({ ...prev, providerId: pRes.data[0].id }));
+            }
         } catch (e: any) {
             setError(e.message);
         } finally {
@@ -28,7 +33,7 @@ const ProviderDashboard = () => {
     };
 
     useEffect(() => {
-        fetchVehicles();
+        fetchData();
     }, []);
 
     const handleAdd = async (e: React.FormEvent) => {
@@ -36,7 +41,7 @@ const ProviderDashboard = () => {
         try {
             await api.post('/provider/vehicles', newVehicle);
             setNewVehicle({ ...newVehicle, costPerMinute: 0, model: '' });
-            fetchVehicles();
+            fetchData();
         } catch (e: any) {
             alert(e.response?.data?.error || e.message);
         }
@@ -46,7 +51,7 @@ const ProviderDashboard = () => {
         if (!window.confirm('Remove this vehicle?')) return;
         try {
             await api.delete(`/provider/vehicles/${id}`);
-            fetchVehicles();
+            fetchData();
         } catch (e: any) {
             alert(e.response?.data?.error || e.message);
         }
@@ -62,8 +67,12 @@ const ProviderDashboard = () => {
             <form onSubmit={handleAdd} className="form-card" style={{ marginBottom: 30 }}>
                 <h3>Add New Vehicle</h3>
                 <div className="input-group">
-                    <label>Provider ID (UUID)</label>
-                    <input value={newVehicle.providerId} onChange={e => setNewVehicle({ ...newVehicle, providerId: e.target.value })} required />
+                    <label>Mobility Provider Company</label>
+                    <select value={newVehicle.providerId} onChange={e => setNewVehicle({ ...newVehicle, providerId: e.target.value })} required>
+                        {providers.map(p => (
+                            <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                    </select>
                 </div>
                 <div className="input-group">
                     <label>Type</label>

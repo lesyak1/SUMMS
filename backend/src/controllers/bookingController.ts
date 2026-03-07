@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express';
+import * as fs from 'fs';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -83,6 +84,7 @@ export const reserveVehicle = async (req: Request, res: Response) => {
 
         res.status(201).json(booking);
     } catch (error: any) {
+        fs.writeFileSync('c:\\SUMMS\\error.log', error.message + '\n' + error.stack);
         res.status(500).json({ error: 'Failed to reserve vehicle', details: error.message });
     }
 };
@@ -166,7 +168,8 @@ export const endRental = async (req: Request, res: Response) => {
             data: {
                 endTime: actualEndTime,
                 duration: durationMinutes,
-                totalCost: roundedCost
+                totalCost: roundedCost,
+                status: 'COMPLETED'
             }
         });
 
@@ -182,7 +185,8 @@ export const payRental = async (req: Request, res: Response) => {
         const bookingId = String(req.params.id);
 
         const booking = await prisma.booking.findUnique({
-            where: { id: bookingId }
+            where: { id: bookingId },
+            include: { payment: true }
         });
 
         if (!booking) {
@@ -193,8 +197,8 @@ export const payRental = async (req: Request, res: Response) => {
             return res.status(403).json({ error: 'Not authorized to pay for this rental' });
         }
 
-        if (booking.status === 'COMPLETED') {
-            return res.status(400).json({ error: 'Booking already paid/completed' });
+        if (booking.payment) {
+            return res.status(400).json({ error: 'Booking already paid' });
         }
 
         const amount = Number(booking.totalCost);
@@ -208,15 +212,15 @@ export const payRental = async (req: Request, res: Response) => {
             }
         });
 
-        const updatedBooking = await prisma.booking.update({
-            where: { id: bookingId },
-            data: { status: 'COMPLETED' }
-        });
-
         // Mark vehicle available again
         await prisma.transport.update({
             where: { id: booking.transportId },
             data: { availability: true }
+        });
+
+        // Refetch booking
+        const updatedBooking = await prisma.booking.findUnique({
+            where: { id: bookingId }
         });
 
         res.json({ payment, booking: updatedBooking });

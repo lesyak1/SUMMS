@@ -14,6 +14,7 @@ export interface UserProfile {
     email: string;
     balance: number;
     city: string | null;
+    preferredMobility: string | null;
 }
 
 interface AuthContextType {

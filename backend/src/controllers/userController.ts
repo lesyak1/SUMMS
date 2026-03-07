@@ -12,10 +12,21 @@ export const getMe = async (req: Request, res: Response) => {
     }
 };
 
+export const getAllUsers = async (req: Request, res: Response) => {
+    try {
+        const users = await prisma.userProfile.findMany({
+            orderBy: { createdAt: 'desc' }
+        });
+        res.json(users);
+    } catch (error: any) {
+        res.status(500).json({ error: 'Failed to fetch users', details: error.message });
+    }
+};
+
 export const updateMe = async (req: Request, res: Response) => {
     try {
         const userId = req.user!.id; // Guaranteed by auth midleware
-        const { firstName, lastName, username, email, city } = req.body;
+        const { firstName, lastName, username, email, city, preferredMobility } = req.body;
 
         const updatedUser = await prisma.userProfile.update({
             where: { id: userId },
@@ -24,7 +35,8 @@ export const updateMe = async (req: Request, res: Response) => {
                 lastName,
                 username,
                 email,
-                city
+                city,
+                preferredMobility
             }
         });
 
