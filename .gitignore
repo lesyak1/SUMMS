@@ -24,3 +24,15 @@ dist-ssr
 *.sw?
 .env
 /generated/prisma
+
+# Backend generated build artifacts (from tsc)
+backend/src/**/*.js
+backend/src/**/*.js.map
+backend/src/**/*.d.ts
+backend/src/**/*.d.ts.map
+!backend/src/types/**/*.d.ts
+!backend/src/types/**/*.d.ts.map
+backend/prisma/**/*.js
+backend/prisma/**/*.js.map
+backend/prisma/**/*.d.ts
+backend/prisma/**/*.d.ts.map
