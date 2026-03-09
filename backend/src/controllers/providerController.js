@@ -9,15 +9,85 @@ export const getProviders = async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch providers', details: error.message });
     }
 };
+export const createProvider = async (req, res) => {
+    try {
+        const name = String(req.body?.name || '').trim();
+        if (!name) {
+            return res.status(400).json({ error: 'Provider name is required' });
+        }
+        if (req.user?.role === 'MOBILITY_PROVIDER') {
+            const userProviderId = req.user.id;
+            const existingByName = await prisma.mobilityProvider.findFirst({
+                where: { name: { equals: name, mode: 'insensitive' } }
+            });
+            const ownedProvider = await prisma.mobilityProvider.upsert({
+                where: { id: userProviderId },
+                update: { name },
+                create: { id: userProviderId, name }
+            });
+            if (existingByName && existingByName.id !== userProviderId) {
+                await prisma.transport.updateMany({
+                    where: { providerId: existingByName.id },
+                    data: { providerId: userProviderId }
+                });
+                await prisma.mobilityProvider.delete({
+                    where: { id: existingByName.id }
+                });
+            }
+            return res.json(ownedProvider);
+        }
+        const existing = await prisma.mobilityProvider.findFirst({
+            where: { name: { equals: name, mode: 'insensitive' } }
+        });
+        if (existing) {
+            return res.json(existing);
+        }
+        const created = await prisma.mobilityProvider.create({
+            data: { name }
+        });
+        res.status(201).json(created);
+    }
+    catch (error) {
+        res.status(500).json({ error: 'Failed to create provider', details: error.message });
+    }
+};
+export const getManageableVehicles = async (req, res) => {
+    try {
+        const isAdmin = req.user?.role === 'ADMIN';
+        const vehicles = await prisma.transport.findMany({
+            where: isAdmin ? {} : { providerId: req.user.id },
+            include: {
+                car: true,
+                bike: true,
+                scooter: true,
+                provider: true
+            },
+            orderBy: { id: 'desc' }
+        });
+        res.json(vehicles);
+    }
+    catch (error) {
+        res.status(500).json({ error: 'Failed to fetch vehicles', details: error.message });
+    }
+};
 export const addVehicle = async (req, res) => {
     try {
         const { providerId, costPerMinute, type, model } = req.body;
-        if (!providerId || !costPerMinute || !type) {
+        const isAdmin = req.user?.role === 'ADMIN';
+        const targetProviderId = isAdmin ? providerId : req.user.id;
+        if (!targetProviderId || !costPerMinute || !type) {
             return res.status(400).json({ error: 'Missing required fields: providerId, costPerMinute, type' });
+        }
+        const provider = await prisma.mobilityProvider.findUnique({
+            where: { id: targetProviderId },
+            select: { id: true }
+        });
+        if (!provider) {
+            return res.status(400).json({ error: 'Invalid mobility provider selected' });
         }
         const transport = await prisma.transport.create({
             data: {
-                providerId,
+                providerId: targetProviderId,
                 costPerMinute,
                 availability: true, // Default to true when added
                 ...(type === 'CAR' ? { car: { create: { model: model || 'Unknown' } } } : {}),
@@ -36,12 +106,16 @@ export const updateVehicle = async (req, res) => {
     try {
         const id = String(req.params.id);
         const { costPerMinute, availability, model } = req.body;
+        const isAdmin = req.user?.role === 'ADMIN';
         const existingTransport = await prisma.transport.findUnique({
             where: { id },
             include: { car: true, bike: true, scooter: true }
         });
         if (!existingTransport) {
             return res.status(404).json({ error: 'Vehicle not found' });
+        }
+        if (!isAdmin && existingTransport.providerId !== req.user.id) {
+            return res.status(403).json({ error: 'You can only modify your own company vehicles' });
         }
         const transportCar = existingTransport.car;
         const updatedTransport = await prisma.transport.update({
@@ -62,6 +136,17 @@ export const updateVehicle = async (req, res) => {
 export const removeVehicle = async (req, res) => {
     try {
         const id = String(req.params.id);
+        const isAdmin = req.user?.role === 'ADMIN';
+        const existingTransport = await prisma.transport.findUnique({
+            where: { id },
+            select: { id: true, providerId: true }
+        });
+        if (!existingTransport) {
+            return res.status(404).json({ error: 'Vehicle not found' });
+        }
+        if (!isAdmin && existingTransport.providerId !== req.user.id) {
+            return res.status(403).json({ error: 'You can only delete your own company vehicles' });
+        }
         // Check for active bookings
         const activeBookings = await prisma.booking.findFirst({
             where: {

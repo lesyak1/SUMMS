@@ -18,9 +18,11 @@ const AccountPage = () => {
         cardVerificationCode: '',
         expirationDate: ''
     });
+    const [providerCompanyName, setProviderCompanyName] = useState('');
     const [msg, setMsg] = useState('');
 
     const getPaymentStorageKey = (userId: string) => `summs_card_profile_${userId}`;
+    const getProviderCompanyStorageKey = (userId: string) => `summs_provider_company_${userId}`;
 
     const isPaymentDataValid = () => {
         const cardNumberValid = /^\d{16}$/.test(paymentData.cardNumber);
@@ -120,6 +122,9 @@ const AccountPage = () => {
                     });
                 }
             }
+
+            const storedProviderCompany = localStorage.getItem(getProviderCompanyStorageKey(profile.id));
+            setProviderCompanyName(storedProviderCompany || '');
         }
     }, [profile]);
 
@@ -138,6 +143,12 @@ const AccountPage = () => {
                     localStorage.removeItem(getPaymentStorageKey(profile.id));
                 } else {
                     localStorage.setItem(getPaymentStorageKey(profile.id), JSON.stringify(paymentData));
+                }
+
+                if (profile.role === 'MOBILITY_PROVIDER') {
+                    localStorage.setItem(getProviderCompanyStorageKey(profile.id), providerCompanyName.trim());
+                } else {
+                    localStorage.removeItem(getProviderCompanyStorageKey(profile.id));
                 }
             }
             setMsg('Profile updated successfully!');
@@ -158,6 +169,13 @@ const AccountPage = () => {
             expirationDate: ''
         });
         setMsg('Credit card details removed.');
+    };
+
+    const handleRemoveProviderCompanyName = () => {
+        if (!profile) return;
+        localStorage.removeItem(getProviderCompanyStorageKey(profile.id));
+        setProviderCompanyName('');
+        setMsg('Mobility provider company name removed.');
     };
 
     if (!profile) return <div>Loading account...</div>;
@@ -195,6 +213,25 @@ const AccountPage = () => {
                         <option value="SCOOTER">Scooter</option>
                     </select>
                 </div>
+
+                {profile.role === 'MOBILITY_PROVIDER' && (
+                    <div>
+                        <label>Mobility Provider Company Name</label><br />
+                        <input
+                            value={providerCompanyName}
+                            onChange={e => setProviderCompanyName(e.target.value)}
+                            placeholder="Enter registered company name"
+                        />
+                        <button
+                            type="button"
+                            className="del-btn"
+                            style={{ marginTop: 10 }}
+                            onClick={handleRemoveProviderCompanyName}
+                        >
+                            Remove Mobility Provider Company Name
+                        </button>
+                    </div>
+                )}
 
                 <h3 style={{ marginTop: 20 }}>Credit Card Details</h3>
                 {!paymentDataEmpty && (hasMissingCardFields || hasPaymentValidationErrors) && (
