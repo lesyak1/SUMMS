@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { vehicleAvailabilityService } from '../services/vehicleAvailability/vehicleAvailabilityService.js';
 
 const prisma = new PrismaClient();
 
@@ -146,13 +147,22 @@ export const updateVehicle = async (req: Request, res: Response) => {
             where: { id },
             data: {
                 ...(costPerMinute !== undefined && { costPerMinute }),
-                ...(availability !== undefined && { availability }),
                 ...(model && transportCar ? { car: { update: { model } } } : {})
             },
-            include: { car: true, bike: true, scooter: true }
+            include: { car: true, bike: true, scooter: true, provider: true }
         });
 
-        res.json(updatedTransport);
+        const availabilityManagedTransport = availability === undefined
+            ? updatedTransport
+            : await vehicleAvailabilityService.updateAvailability({
+                transportId: id,
+                availability,
+                source: 'PROVIDER_DASHBOARD',
+                ...(req.user?.id ? { actorUserId: req.user.id } : {}),
+                reason: 'Provider availability update'
+            });
+
+        res.json(availabilityManagedTransport);
     } catch (error: any) {
         res.status(500).json({ error: 'Failed to update vehicle', details: error.message });
     }

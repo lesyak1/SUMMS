@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { vehicleAvailabilityService } from '../services/vehicleAvailability/vehicleAvailabilityService.js';
 
 const prisma = new PrismaClient();
 
@@ -41,7 +42,8 @@ export const getRentalAnalytics = async (req: Request, res: Response) => {
         res.json({
             totalRentals,
             completedRentals,
-            totalRevenue: aggregateCost._sum.totalCost || 0
+            totalRevenue: aggregateCost._sum.totalCost || 0,
+            availabilitySnapshot: vehicleAvailabilityService.getAnalyticsSnapshot()
         });
     } catch (error: any) {
         res.status(500).json({ error: 'Failed to fetch rental analytics', details: error.message });
