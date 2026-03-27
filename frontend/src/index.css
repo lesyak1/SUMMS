@@ -8,7 +8,7 @@
     background-color: #ffffff;
   }
   a:hover {
-    color: #747bff;
+    color: inherit;
   }
   button {
     background-color: #f9f9f9;

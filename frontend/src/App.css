@@ -49,7 +49,7 @@ p {
 }
 
 button {
-    background-color: #0066cc;
+    background-color: #525050;
     color: #fff;
     border: none;
     padding: 10px 16px;
@@ -60,7 +60,7 @@ button {
 }
 
 button:hover {
-    background-color: #0052a3;
+    background-color: #050505;
 }
 
 button:disabled {
