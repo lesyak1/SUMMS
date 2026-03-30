@@ -1,9 +1,7 @@
 import type { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { vehicleAvailabilityService } from '../services/vehicleAvailability/vehicleAvailabilityService.js';
 
-const prisma = new PrismaClient();
-
+import prisma from '../prisma.js';
 export const getRentalAnalytics = async (req: Request, res: Response) => {
     try {
         const { from, to, city, type } = req.query;

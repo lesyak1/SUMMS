@@ -1,10 +1,8 @@
 import type { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { parkingReservationCreator } from '../services/creators/parkingReservationCreator.js';
 import { accessLogCreator } from '../services/creators/accessLogCreator.js';
 
-const prisma = new PrismaClient();
-
+import prisma from '../prisma.js';
 export const listSpots = async (req: Request, res: Response) => {
     try {
         const spots = await prisma.parkingSpot.findMany();

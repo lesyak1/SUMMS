@@ -1,4 +1,3 @@
-import { PrismaClient } from '@prisma/client';
 import { VehicleAvailabilityAnalyticsObserver } from './vehicleAvailabilityAnalyticsObserver.js';
 import { VehicleAvailabilityAccessLogObserver } from './vehicleAvailabilityAccessLogObserver.js';
 import type {
@@ -8,7 +7,7 @@ import type {
 import type { VehicleAvailabilityAnalyticsSnapshot } from './vehicleAvailabilityAnalyticsObserver.js';
 import { VehicleAvailabilitySubject } from './vehicleAvailabilitySubject.js';
 
-const prisma = new PrismaClient();
+import prisma from '../../prisma.js';
 const subject = new VehicleAvailabilitySubject();
 const analyticsObserver = new VehicleAvailabilityAnalyticsObserver();
 

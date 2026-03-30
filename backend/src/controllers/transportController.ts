@@ -1,9 +1,7 @@
 import type { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { accessLogCreator } from '../services/creators/accessLogCreator.js';
 
-const prisma = new PrismaClient();
-
+import prisma from '../prisma.js';
 export const getRoutes = async (req: Request, res: Response) => {
     try {
         const userId = req.user?.id;

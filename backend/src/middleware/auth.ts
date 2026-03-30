@@ -1,8 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '../prisma.js';
 
 export const authenticateToken = async (req: Request, res: Response, next: NextFunction) => {
     const authHeader = req.headers['authorization'];
@@ -13,37 +11,34 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
     }
 
     try {
-        // Decode the Supabase JWT. Since the secret might not be provided in this exercise,
-        // we'll primarily decode and trust it. However, if SUPABASE_JWT_SECRET is set, we use it.
         const secret = process.env.SUPABASE_JWT_SECRET;
-
         let decodedUser: any;
         if (secret) {
             decodedUser = jwt.verify(token, secret);
         } else {
-            // For local testing without secret, we just decode. 
-            // WARNING: In production, always verify!
             decodedUser = jwt.decode(token);
         }
 
         if (!decodedUser || !decodedUser.sub) {
+            console.error("\n❌ [AUTH ERROR] Token Decode Failed. Payload is invalid or missing 'sub'. Payload:", decodedUser);
             return res.status(403).json({ error: 'Forbidden: Invalid token' });
         }
 
-        const userId = decodedUser.sub; // Supabase uses "sub" for user ID
+        const userId = decodedUser.sub;
 
-        // Fetch user from public schema
         const user = await prisma.userProfile.findUnique({
             where: { id: userId },
         });
 
         if (!user) {
+            console.error(`\n❌ [AUTH ERROR] User Profile not found in database for ID: ${userId}`);
             return res.status(401).json({ error: 'Unauthorized: User not found in database' });
         }
 
         req.user = user;
         next();
     } catch (err: any) {
+        console.error("\n❌ [AUTH EXCEPTION] Caught error in middleware:", err);
         return res.status(403).json({ error: 'Forbidden: Token verification failed', details: err.message });
     }
 };

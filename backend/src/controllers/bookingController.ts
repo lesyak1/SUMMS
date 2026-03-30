@@ -1,6 +1,5 @@
 import type { Request, Response } from 'express';
 import * as fs from 'fs';
-import { PrismaClient } from '@prisma/client';
 import { tripPricingService } from '../services/pricing/tripPricingService.js';
 import { resolveVehicleType } from '../services/transport/vehicleType.js';
 import { vehicleAvailabilityService } from '../services/vehicleAvailability/vehicleAvailabilityService.js';
@@ -8,8 +7,7 @@ import { bookingCreator } from '../services/creators/bookingCreator.js';
 import { paymentCreator } from '../services/creators/paymentCreator.js';
 import { accessLogCreator } from '../services/creators/accessLogCreator.js';
 
-const prisma = new PrismaClient();
-
+import prisma from '../prisma.js';
 export const getMyBookings = async (req: Request, res: Response) => {
     try {
         const userId = req.user!.id;
