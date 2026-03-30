@@ -43,7 +43,8 @@ const AdminDashboard = () => {
 
     return (
         <div className="page-container">
-            <h2>Admin Dashboard</h2>
+                    <h1 className="text-5xl font-bold mb-12">Admin Dashboard</h1>
+
 
             <div className="grid">
                 <div className="card">

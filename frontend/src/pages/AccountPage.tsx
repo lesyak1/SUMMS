@@ -182,9 +182,11 @@ const AccountPage = () => {
 
     return (
         <div className="page-container">
-            <h2>Account Settings</h2>
-            <p>Role: <strong>{profile.role}</strong></p>
-            <p>Email: {profile.email}</p>
+            <h1 className="text-5xl font-bold mb-12">Account Settings</h1>
+            <div style={{ marginBottom: 40}}>
+                <p>Role: <strong>{profile.role}</strong></p>
+                <p>Email: {profile.email}</p>
+            </div>
 
             {msg && <p className="status-msg">{msg}</p>}
 
@@ -293,7 +295,7 @@ const AccountPage = () => {
                 <button
                     type="button"
                     className="del-btn"
-                    style={{ marginTop: 10, marginLeft: 10 }}
+                    style={{ marginTop: 10 }}
                     onClick={handleRemoveCreditCard}
                 >
                     Remove Credit Card

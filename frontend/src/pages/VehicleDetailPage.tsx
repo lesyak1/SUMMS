@@ -43,15 +43,17 @@ const VehicleDetailPage = () => {
 
     return (
         <div className="page-container">
-            <h2>Vehicle Details</h2>
+                    <h1 className="text-5xl font-bold mb-12">Vehicle Details</h1>
+
             {error && <p className="error">{error}</p>}
 
+            <div style={{display: "grid",gridTemplateColumns: "1fr 1fr"}}>
             <div className="card">
                 <h3>{vehicle.car?.model || (vehicle.bike ? 'City Bike' : 'Electric Scooter')}</h3>
                 <p>Price per minute: ${vehicle.costPerMinute}</p>
                 <p>Availability: {vehicle.availability ? 'Available' : 'Currently Rented'}</p>
             </div>
-
+            <div></div>
             {vehicle.availability && (
                 <form onSubmit={handleReserve} className="form-card" style={{ marginTop: '20px' }}>
                     <h3>Reserve Now</h3>
@@ -74,6 +76,7 @@ const VehicleDetailPage = () => {
                     <button type="submit" style={{ marginTop: '10px' }}>Confirm Booking</button>
                 </form>
             )}
+            </div>
         </div>
     );
 };

@@ -14,7 +14,7 @@ const PublicTransportPage = () => {
 
     return (
         <div className="page-container">
-            <h2>Public Transport Schedules</h2>
+            <h1 className="text-5xl font-bold mb-12">Public Transport Schedules</h1>
 
             {loading ? <p>Loading routes...</p> : (
                 <table className="data-table">

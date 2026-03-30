@@ -41,7 +41,8 @@ const ParkingPage = () => {
 
     return (
         <div className="page-container">
-            <h2>Parking Availability</h2>
+            <h1 className="text-5xl font-bold mb-12">Parking Availability</h1>
+
             {msg && <p className="status-msg">{msg}</p>}
 
             {loading ? <p>Loading...</p> : (

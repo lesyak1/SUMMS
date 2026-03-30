@@ -3,40 +3,16 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../features/auth/context/AuthContext';
 import { supabase } from '../lib/supabase';
 import api from '../lib/api';
+import Button from '../components/ui/Button/Button';
 
 const DashboardPage = () => {
-    const { user, profile } = useAuth();
-    const [recommendations, setRecommendations] = useState<any[]>([]);
-    const [loadingRecommendation, setLoadingRecommendation] = useState(false);
+    const { user, profile, recommendations, loadingRecommendation } = useAuth();
 
-    useEffect(() => {
-        const loadRecommendations = async () => {
-            if (profile?.preferredMobility && profile?.city) {
-                setLoadingRecommendation(true);
-                try {
-                    // Fetch vehicles matching the user's preferred mobility and ensure they are available
-                    const res = await api.get(`/vehicles?type=${profile.preferredMobility}&availability=true`);
-                    setRecommendations(res.data);
-                } catch (e) {
-                    console.error('Failed to load recommendations', e);
-                } finally {
-                    setLoadingRecommendation(false);
-                }
-            }
-        };
-
-        if (profile) loadRecommendations();
-    }, [profile]);
-
-    const handleLogout = async () => {
-        await supabase.auth.signOut();
-    };
 
     return (
         <div className="page-container">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h2>Welcome to SUMMS</h2>
-                <button onClick={handleLogout} className="del-btn">Logout</button>
+                <h1 className="text-5xl font-bold mb-12">Welcome To SUMMS</h1>
             </div>
 
             <p>Logged in as: {user?.email} ({profile?.role || 'CLIENT'})</p>
@@ -48,10 +24,14 @@ const DashboardPage = () => {
                     {loadingRecommendation ? (
                         <p>Loading your recommendations...</p>
                     ) : recommendations.length > 0 ? (
-                        <p>
-                            Good news! We found <strong>{recommendations.length} available {profile.preferredMobility.toLowerCase()}s</strong> in <strong>{profile.city}</strong> based on your preferences.
-                            <Link to="/vehicles" style={{ marginLeft: '10px' }}>View them now</Link>
-                        </p>
+                        <div className="flex-col">
+                            <p>
+                                Good news! We found <strong>{recommendations.length} available {profile.preferredMobility.toLowerCase()}s</strong> in <strong>{profile.city}</strong> based on your preferences.
+                            </p>
+                            <Button style={{ marginTop: 20 }}>
+                                <Link to="/vehicles">View them now</Link>
+                            </Button>
+                        </div>
                     ) : (
                         <p>Currently, there is no availability for {profile.preferredMobility.toLowerCase()}s in {profile.city}. Try checking other vehicle types.</p>
                     )}
