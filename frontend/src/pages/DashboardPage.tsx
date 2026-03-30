@@ -77,11 +77,11 @@ const DashboardPage = () => {
                     </div>
                 )}
 
-                {(profile?.role === 'MOBILITY_PROVIDER' || profile?.role === 'ADMIN') && (
-                    <div className="card" style={{ border: '2px solid #00c853' }}>
-                        <h3>Provider Tools</h3>
-                        <p>Manage fleet and vehicles.</p>
-                        <Link to="/provider/vehicles"><button>Provider Dashboard</button></Link>
+                {profile?.role === 'MOBILITY_PROVIDER' && (
+                    <div className="card" style={{ border: '2px solid #5a02e8' }}>
+                        <h3>Provider Analytics</h3>
+                        <p>View analytics for your own vehicles.</p>
+                        <Link to="/admin/analytics"><button>View Analytics</button></Link>
                     </div>
                 )}
             </div>
