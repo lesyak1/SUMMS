@@ -40,7 +40,6 @@ const AdminDashboard = () => {
     const handleUpdateRole = async (userId: string, newRole: string) => {
         try {
             await api.put(`/admin/users/${userId}/role`, { role: newRole });
-
             const uRes = await api.get('/admin/users');
             setUsers(uRes.data);
         } catch (e: any) {
@@ -58,10 +57,18 @@ const AdminDashboard = () => {
 
             <div className="grid">
                 <div className="card">
-                    <h3>Rental Analytics</h3>
-                    <p>Total Rentals: <strong>{rentals?.totalRentals || 0}</strong></p>
-                    <p>Completed: <strong>{rentals?.completedRentals || 0}</strong></p>
-                    <p>Total Revenue: <strong>${rentals?.totalRevenue || 0}</strong></p>
+                    <h3>Rental Analytics Summary</h3>
+                    <p>Total Rentals: <strong>{rentals?.summary?.totalRentals || 0}</strong></p>
+                    <p>Completed Rentals: <strong>{rentals?.summary?.completedRentals || 0}</strong></p>
+                    <p>Total Revenue: <strong>${rentals?.summary?.totalRevenue || 0}</strong></p>
+                </div>
+
+                <div className="card">
+                    <h3>Metrics</h3>
+                    <p>Bicycles Currently Rented: <strong>{rentals?.requiredMetrics?.bicyclesCurrentlyRented || 0}</strong></p>
+                    <p>Scooters Currently Available: <strong>{rentals?.requiredMetrics?.scootersCurrentlyAvailable || 0}</strong></p>
+                    <p>Trips Completed Today: <strong>{rentals?.requiredMetrics?.tripsCompletedToday || 0}</strong></p>
+                    <p>Most Used Mobility Option: <strong>{rentals?.requiredMetrics?.mostUsedMobilityOption || 'N/A'}</strong></p>
                 </div>
 
                 {isAdmin && (
@@ -76,6 +83,32 @@ const AdminDashboard = () => {
                             {(!gateway || gateway.length === 0) && <li>No logs yet</li>}
                         </ul>
                     </div>
+                )}
+            </div>
+
+            <div className="card" style={{ marginTop: 32 }}>
+                <h3>Usage Per City</h3>
+                {rentals?.requiredMetrics?.usagePerCity?.length > 0 ? (
+                    <div style={{ overflowX: 'auto', marginTop: 16 }}>
+                        <table className="data-table" style={{ minWidth: '500px' }}>
+                            <thead>
+                                <tr>
+                                    <th>City</th>
+                                    <th>Usage Count</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {rentals.requiredMetrics.usagePerCity.map((entry: any) => (
+                                    <tr key={entry.city}>
+                                        <td>{entry.city}</td>
+                                        <td>{entry.count}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : (
+                    <p style={{ marginTop: 16 }}>No usage data available.</p>
                 )}
             </div>
 
