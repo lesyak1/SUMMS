@@ -114,7 +114,7 @@ const RentalsPage = () => {
 
     return (
         <div className="page-container">
-            <h2>My Rentals</h2>
+            <h1 className="text-5xl font-bold mb-12">My Rentals</h1>
             {error && <p className="error">{error}</p>}
             {paymentConfirmation && <p className="status-msg">{paymentConfirmation}</p>}
             {paymentError && (
@@ -134,7 +134,7 @@ const RentalsPage = () => {
                             <p>Period: {new Date(b.startTime).toLocaleTimeString()} - {new Date(b.endTime).toLocaleTimeString()}</p>
                             {b.status === 'COMPLETED' && <p>Cost: ${b.totalCost}</p>}
 
-                            <div style={{ marginTop: 10 }}>
+                            <div style={{ marginTop: "auto" }}>
                                 {b.status === 'RESERVED' && <button onClick={() => handleAction(b.id, 'start')}>Start Rental</button>}
                                 {b.status === 'ACTIVE' && <button onClick={() => handleAction(b.id, 'end')}>End Rental</button>}
                                 {b.status === 'ACTIVE' && <p style={{ fontSize: '0.8rem', color: '#666' }}>* Ending computes final cost</p>}

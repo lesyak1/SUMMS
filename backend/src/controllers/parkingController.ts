@@ -1,8 +1,8 @@
 import type { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { parkingReservationCreator } from '../services/creators/parkingReservationCreator.js';
+import { accessLogCreator } from '../services/creators/accessLogCreator.js';
 
-const prisma = new PrismaClient();
-
+import prisma from '../prisma.js';
 export const listSpots = async (req: Request, res: Response) => {
     try {
         const spots = await prisma.parkingSpot.findMany();
@@ -34,22 +34,17 @@ export const reserveSpot = async (req: Request, res: Response) => {
             return res.status(400).json({ error: 'Spot already reserved for this time period' });
         }
 
-        const reservation = await prisma.parkingReservation.create({
-            data: {
-                spotId,
-                clientId: userId,
-                startTime: start,
-                endTime: end
-            }
+        const reservation = await parkingReservationCreator.create({
+            spotId,
+            clientId: userId,
+            startTime: start,
+            endTime: end
         });
 
         // Write access log
-        await prisma.accessLog.create({
-            data: {
-                userId,
-                serviceType: 'PARKING',
-                timeStamp: new Date()
-            }
+        await accessLogCreator.create({
+            userId,
+            serviceType: 'PARKING'
         });
 
         res.status(201).json(reservation);

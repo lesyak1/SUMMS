@@ -1,12 +1,12 @@
 import { Router } from 'express';
-import { getRentalAnalytics, getGatewayAnalytics } from '../controllers/adminController.js';
+import { getGatewayAnalytics, getRentalAnalytics } from '../controllers/adminController.js';
 import { authenticateToken, requireRole } from '../middleware/auth.js';
 
 const router = Router();
 
-router.use(authenticateToken, requireRole(['ADMIN']));
+router.use(authenticateToken);
 
-router.get('/analytics/rentals', getRentalAnalytics);
-router.get('/analytics/gateway', getGatewayAnalytics);
+router.get('/analytics/rentals', requireRole(['ADMIN', 'MOBILITY_PROVIDER']), getRentalAnalytics);
+router.get('/analytics/gateway', requireRole(['ADMIN']), getGatewayAnalytics);
 
 export default router;

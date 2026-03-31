@@ -1,8 +1,8 @@
 import type { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { vehicleAvailabilityService } from '../services/vehicleAvailability/vehicleAvailabilityService.js';
+import { transportCreator } from '../services/creators/transportCreator.js';
 
-const prisma = new PrismaClient();
-
+import prisma from '../prisma.js';
 export const getProviders = async (req: Request, res: Response) => {
     try {
         const providers = await prisma.mobilityProvider.findMany();
@@ -103,16 +103,11 @@ export const addVehicle = async (req: Request, res: Response) => {
             return res.status(400).json({ error: 'Invalid mobility provider selected' });
         }
 
-        const transport = await prisma.transport.create({
-            data: {
-                providerId: targetProviderId,
-                costPerMinute,
-                availability: true, // Default to true when added
-                ...(type === 'CAR' ? { car: { create: { model: model || 'Unknown' } } } : {}),
-                ...(type === 'BIKE' ? { bike: { create: {} } } : {}),
-                ...(type === 'SCOOTER' ? { scooter: { create: {} } } : {}),
-            },
-            include: { car: true, bike: true, scooter: true }
+        const transport = await transportCreator.create({
+            providerId: targetProviderId,
+            costPerMinute: Number(costPerMinute),
+            type,
+            model
         });
 
         res.status(201).json(transport);
@@ -146,13 +141,22 @@ export const updateVehicle = async (req: Request, res: Response) => {
             where: { id },
             data: {
                 ...(costPerMinute !== undefined && { costPerMinute }),
-                ...(availability !== undefined && { availability }),
                 ...(model && transportCar ? { car: { update: { model } } } : {})
             },
-            include: { car: true, bike: true, scooter: true }
+            include: { car: true, bike: true, scooter: true, provider: true }
         });
 
-        res.json(updatedTransport);
+        const availabilityManagedTransport = availability === undefined
+            ? updatedTransport
+            : await vehicleAvailabilityService.updateAvailability({
+                transportId: id,
+                availability,
+                source: 'PROVIDER_DASHBOARD',
+                ...(req.user?.id ? { actorUserId: req.user.id } : {}),
+                reason: 'Provider availability update'
+            });
+
+        res.json(availabilityManagedTransport);
     } catch (error: any) {
         res.status(500).json({ error: 'Failed to update vehicle', details: error.message });
     }

@@ -1,8 +1,7 @@
 import type { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { vehicleRecommendationService } from '../services/recommendations/vehicleRecommendationService.js';
 
-const prisma = new PrismaClient();
-
+import prisma from '../prisma.js';
 export const searchVehicles = async (req: Request, res: Response) => {
     try {
         const { type, maxPrice, availability } = req.query;
@@ -58,5 +57,29 @@ export const getVehicleDetails = async (req: Request, res: Response) => {
         res.json(vehicle);
     } catch (error: any) {
         res.status(500).json({ error: 'Failed to fetch vehicle details', details: error.message });
+    }
+};
+
+export const getRecommendedVehicles = async (req: Request, res: Response) => {
+    try {
+        const vehicles = await prisma.transport.findMany({
+            include: {
+                car: true,
+                bike: true,
+                scooter: true,
+                provider: true
+            }
+        });
+
+        const recommendation = vehicleRecommendationService.recommend({
+            vehicles,
+            ...(typeof req.query.type === 'string' ? { requestedType: req.query.type } : {}),
+            ...(req.user?.preferredMobility !== undefined ? { preferredMobility: req.user.preferredMobility } : {}),
+            ...(req.user?.city !== undefined ? { city: req.user.city } : {})
+        });
+
+        res.json(recommendation);
+    } catch (error: any) {
+        res.status(500).json({ error: 'Failed to generate vehicle recommendations', details: error.message });
     }
 };

@@ -22,6 +22,8 @@ interface AuthContextType {
     session: Session | null;
     profile: UserProfile | null;
     loading: boolean;
+    recommendations: any[];
+    loadingRecommendation: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -29,6 +31,8 @@ const AuthContext = createContext<AuthContextType>({
     session: null,
     profile: null,
     loading: true,
+    recommendations: [],
+    loadingRecommendation: true
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -36,6 +40,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
+    const [recommendations, setRecommendations] = useState<any[]>([]);
+    const [loadingRecommendation, setLoadingRecommendation] = useState(false);
 
     const loadProfile = async () => {
         try {
@@ -46,6 +52,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setProfile(null);
         }
     };
+
+
+    useEffect(() => {
+        const loadRecommendations = async () => {
+            if (profile?.preferredMobility && profile?.city) {
+                setLoadingRecommendation(true);
+                try {
+                    // Fetch vehicles matching the user's preferred mobility and ensure they are available
+                    const res = await api.get(`/vehicles?type=${profile.preferredMobility}&availability=true`);
+                    setRecommendations(res.data);
+                } catch (e) {
+                    console.error('Failed to load recommendations', e);
+                } finally {
+                    setLoadingRecommendation(false);
+                }
+            }
+        };
+
+        if (profile) loadRecommendations();
+    }, [profile]);
+
 
     const navigate = useNavigate();
     useEffect(() => {
@@ -77,7 +104,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }, []);
 
     return (
-        <AuthContext.Provider value={{ user, session, profile, loading }}>
+        <AuthContext.Provider value={{ 
+            user, 
+            session, 
+            profile, 
+            loading,
+            recommendations,
+            loadingRecommendation
+        }}>
             {children}
         </AuthContext.Provider>
     );

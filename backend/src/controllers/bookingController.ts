@@ -1,18 +1,40 @@
 import type { Request, Response } from 'express';
 import * as fs from 'fs';
-import { PrismaClient } from '@prisma/client';
+import { tripPricingService } from '../services/pricing/tripPricingService.js';
+import { resolveVehicleType } from '../services/transport/vehicleType.js';
+import { vehicleAvailabilityService } from '../services/vehicleAvailability/vehicleAvailabilityService.js';
+import { bookingCreator } from '../services/creators/bookingCreator.js';
+import { paymentCreator } from '../services/creators/paymentCreator.js';
+import { accessLogCreator } from '../services/creators/accessLogCreator.js';
 
-const prisma = new PrismaClient();
-
+import prisma from '../prisma.js';
 export const getMyBookings = async (req: Request, res: Response) => {
     try {
         const userId = req.user!.id;
         const bookings = await prisma.booking.findMany({
             where: { clientId: userId },
-            include: { transport: true, trip: true, payment: true },
+            include: {
+                transport: {
+                    include: {
+                        car: true,
+                        bike: true,
+                        scooter: true,
+                        provider: true
+                    }
+                },
+                trip: true,
+                payment: true
+            },
             orderBy: { startTime: 'desc' }
         });
-        res.json(bookings);
+
+        res.json(bookings.map((booking) => ({
+            ...booking,
+            vehicleName: booking.transport.car?.model
+                || (booking.transport.bike ? 'Bike' : null)
+                || (booking.transport.scooter ? 'Scooter' : null)
+                || 'Mobility Vehicle'
+        })));
     } catch (error: any) {
         res.status(500).json({ error: 'Failed to fetch bookings', details: error.message });
     }
@@ -49,37 +71,19 @@ export const reserveVehicle = async (req: Request, res: Response) => {
         }
 
         // Create a Trip for this booking
-        const trip = await prisma.trip.create({
-            data: {
-                clientId: userId,
-                departure,
-                destination,
-                startTime: start,
-                endTime: end
-            }
-        });
-
-        const booking = await prisma.booking.create({
-            data: {
-                clientId: userId,
-                transportId,
-                tripId: trip.id,
-                bookingDate: new Date(),
-                startTime: start,
-                endTime: end,
-                duration: 0,
-                totalCost: 0,
-                status: 'RESERVED'
-            }
+        const { booking } = await bookingCreator.create({
+            clientId: userId,
+            transportId,
+            departure,
+            destination,
+            startTime: start,
+            endTime: end
         });
 
         // Write access log
-        await prisma.accessLog.create({
-            data: {
-                userId,
-                serviceType: 'RENTAL',
-                timeStamp: new Date()
-            }
+        await accessLogCreator.create({
+            userId,
+            serviceType: 'RENTAL'
         });
 
         res.status(201).json(booking);
@@ -115,10 +119,12 @@ export const startRental = async (req: Request, res: Response) => {
             data: { status: 'ACTIVE' }
         });
 
-        // Mark vehicle unavailable
-        await prisma.transport.update({
-            where: { id: booking.transportId },
-            data: { availability: false }
+        await vehicleAvailabilityService.updateAvailability({
+            transportId: booking.transportId,
+            availability: false,
+            actorUserId: userId,
+            source: 'BOOKING_START',
+            reason: `Booking ${bookingId} started`
         });
 
         res.json(updatedBooking);
@@ -134,7 +140,12 @@ export const endRental = async (req: Request, res: Response) => {
 
         const booking = await prisma.booking.findUnique({
             where: { id: bookingId },
-            include: { transport: true }
+            include: {
+                transport: {
+                    include: { car: true, bike: true, scooter: true }
+                },
+                client: true
+            }
         });
 
         if (!booking) {
@@ -159,21 +170,37 @@ export const endRental = async (req: Request, res: Response) => {
         let durationMinutes = Math.ceil(durationMs / 60000);
         if (durationMinutes < 1) durationMinutes = 1; // Minimum 1 minute charge
 
-        const totalCost = Number(booking.transport.costPerMinute) * durationMinutes;
-        // Round to 2 decimals
-        const roundedCost = Math.round(totalCost * 100) / 100;
+        const pricing = tripPricingService.calculate({
+            durationMinutes,
+            costPerMinute: Number(booking.transport.costPerMinute),
+            vehicleType: resolveVehicleType(booking.transport),
+            city: booking.client.city,
+            preferredMobility: booking.client.preferredMobility
+        });
 
         const updatedBooking = await prisma.booking.update({
             where: { id: bookingId },
             data: {
                 endTime: actualEndTime,
                 duration: durationMinutes,
-                totalCost: roundedCost,
+                totalCost: pricing.total,
                 status: 'COMPLETED'
             }
         });
 
-        res.json(updatedBooking);
+        await vehicleAvailabilityService.updateAvailability({
+            transportId: booking.transportId,
+            availability: true,
+            actorUserId: userId,
+            source: 'BOOKING_END',
+            reason: `Booking ${bookingId} ended`
+        });
+
+        res.json({
+            ...updatedBooking,
+            pricingStrategy: pricing.strategy,
+            pricingAdjustments: pricing.adjustments
+        });
     } catch (error: any) {
         res.status(500).json({ error: 'Failed to end rental', details: error.message });
     }
@@ -254,13 +281,9 @@ export const payRental = async (req: Request, res: Response) => {
             return res.status(400).json({ error: 'Invalid rental amount to pay' });
         }
 
-        const payment = await prisma.payment.create({
-            data: {
-                bookingId,
-                amount,
-                status: 'PAID',
-                timestamp: new Date()
-            }
+        const payment = await paymentCreator.create({
+            bookingId,
+            amount
         });
 
         // Mark vehicle available again

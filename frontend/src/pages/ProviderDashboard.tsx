@@ -135,7 +135,8 @@ const ProviderDashboard = () => {
 
     return (
         <div className="page-container">
-            <h2>Provider Dashboard</h2>
+            <h1 className="text-5xl font-bold mb-12">Provider Dashboard</h1>
+
             {error && <p className="error">{error}</p>}
 
             <form onSubmit={handleAdd} className="form-card" style={{ marginBottom: 30 }}>
