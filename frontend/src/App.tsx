@@ -35,7 +35,7 @@ const App = () => {
 
             <Route path="/admin" element={<RoleProtectedRoute allowedRoles={['ADMIN']}><AdminDashboard /></RoleProtectedRoute>} />
             <Route path="/admin/users" element={<RoleProtectedRoute allowedRoles={['ADMIN']}><AdminDashboard /></RoleProtectedRoute>} />
-            <Route path="/admin/analytics" element={<RoleProtectedRoute allowedRoles={['ADMIN']}><AdminDashboard /></RoleProtectedRoute>} />
+            <Route path="/admin/analytics" element={<RoleProtectedRoute allowedRoles={['ADMIN', 'MOBILITY_PROVIDER']}><AdminDashboard /></RoleProtectedRoute>} />
 
             {/* Public Auth Routes */}
             <Route path="/login" element={<Login />} />
