@@ -24,6 +24,7 @@ model UserProfile {
   parkingReservations ParkingReservation[]
   trips               Trip[]
   users               users                @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  totalCo2Kg          Float                @default(0) @map("total_co2_kg")
 
   @@map("users")
   @@schema("public")
@@ -43,6 +44,8 @@ model Transport {
   providerId    String           @db.Uuid
   costPerMinute Decimal          @db.Decimal(10, 2)
   availability  Boolean
+  availableFrom DateTime
+  availableTo   DateTime
   bike          Bike?
   bookings      Booking[]
   car           Car?
@@ -55,6 +58,7 @@ model Transport {
 
 model Bike {
   id        String    @id @db.Uuid
+  imageUrl  String?   @map("image_url")
   transport Transport @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("bike")
@@ -64,6 +68,9 @@ model Bike {
 model Car {
   id        String    @id @db.Uuid
   model     String
+  fuelType             String    @map("fuel_type")
+  emissionFactorGPerKm Float     @map("emission_factor_g_per_km")
+  imageUrl             String?   @map("image_url")
   transport Transport @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("car")
@@ -72,6 +79,9 @@ model Car {
 
 model Scooter {
   id        String    @id @db.Uuid
+  fuelType             String    @map("fuel_type")
+  emissionFactorGPerKm Float     @map("emission_factor_g_per_km")
+  imageUrl             String?   @map("image_url")
   transport Transport @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("scooter")
@@ -107,6 +117,8 @@ model Booking {
   transport   Transport    @relation(fields: [transportId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   trip        Trip         @relation(fields: [tripId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   payment     Payment?
+  co2Kg       Float?       @map("co2_kg")
+  distanceKm  Float?       @map("distance_km")
 
   @@map("booking")
   @@schema("public")

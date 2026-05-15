@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ChangeEvent, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AuthLayout from "../components/AuthLayou";
 import Input from "../../../components/ui/Input/Input";
@@ -14,7 +14,9 @@ const Login = () => {
 
     const navigate = useNavigate()
 
-    const handleSubmit = async (e: React.SubmitEvent) => {
+    const getErrorMessage = (error: unknown) => error instanceof Error ? error.message : "Login failed";
+
+    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setError("");
         setLoading(true);
@@ -24,8 +26,8 @@ const Login = () => {
             console.log("Login successful");
             navigate("/");
         }
-        catch (e: any) {
-            setError(e.message || "Login failed")
+        catch (error: unknown) {
+            setError(getErrorMessage(error))
         }
         finally {
             setLoading(false);
@@ -35,8 +37,8 @@ const Login = () => {
 
     return (
         <AuthLayout
-            title="Sign in with email"
-            subtitle="Make a new doc to bring your words, data, and teams together."
+            title="Sign In"
+            subtitle="Welcome back! Access your rides, parking, and transit instantly."
             footerText="Don't have an account?"
             footerLinkText="Register"
             footerLinkTo="/register"
@@ -46,14 +48,14 @@ const Login = () => {
                     type="email"
                     placeholder="Email"
                     value={email}
-                    onChange={(e: any) => setEmail(e.target.value)}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
                     required
                 />
                 <Input
                     type="password"
                     placeholder="Password"
                     value={password}
-                    onChange={(e: any) => setPassword(e.target.value)}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
                     required
                     error={error}
                 />

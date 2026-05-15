@@ -39,7 +39,9 @@ async function main() {
         data: [
             { status: 'AVAILABLE', location: '100 Main St Level 1 Spot 1' },
             { status: 'AVAILABLE', location: '100 Main St Level 1 Spot 2' },
-            { status: 'AVAILABLE', location: '200 Downtown Ave Spot A' }
+            { status: 'AVAILABLE', location: '200 Downtown Ave Spot A' },
+            { status: 'AVAILABLE', location: 'Yonge St Spot 1' },
+            { status: 'AVAILABLE', location: 'Yonge St Spot 2' }
         ]
     });
     console.log('Database seeded successfully. Note: Users are handled by Supabase Auth and should be registered via UI.');

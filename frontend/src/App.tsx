@@ -17,6 +17,7 @@ import ParkingPage from './pages/ParkingPage';
 import PublicTransportPage from './pages/PublicTransportPage';
 import ProviderDashboard from './pages/ProviderDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import PaymentPage from './pages/PaymentPage';
 
 const App = () => {
     return (
@@ -27,6 +28,7 @@ const App = () => {
             <Route path="/vehicles" element={<ProtectedRoute><VehiclesPage /></ProtectedRoute>} />
             <Route path="/vehicles/:id" element={<ProtectedRoute><VehicleDetailPage /></ProtectedRoute>} />
             <Route path="/rentals/current" element={<ProtectedRoute><RentalsPage /></ProtectedRoute>} />
+            <Route path="/payment" element={<ProtectedRoute><PaymentPage /></ProtectedRoute>} />
             <Route path="/parking" element={<ProtectedRoute><ParkingPage /></ProtectedRoute>} />
             <Route path="/public-transport" element={<ProtectedRoute><PublicTransportPage /></ProtectedRoute>} />
 

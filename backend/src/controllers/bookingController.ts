@@ -7,7 +7,14 @@ import { bookingCreator } from '../services/creators/bookingCreator.js';
 import { paymentCreator } from '../services/creators/paymentCreator.js';
 import { accessLogCreator } from '../services/creators/accessLogCreator.js';
 
+export const fsWrapper = {
+    existsSync: fs.existsSync,
+    mkdirSync: fs.mkdirSync,
+    writeFileSync: fs.writeFileSync
+};
+
 import prisma from '../prisma.js';
+import { getAvailableSlots } from '../utils/availability.js';
 export const getMyBookings = async (req: Request, res: Response) => {
     try {
         const userId = req.user!.id;
@@ -46,31 +53,60 @@ export const reserveVehicle = async (req: Request, res: Response) => {
         const { transportId, departure, destination, startTime, endTime } = req.body;
 
         const transport = await prisma.transport.findUnique({
-            where: { id: transportId }
+            where: { id: transportId },
+            include: {
+                bookings: true
+            }
         });
 
-        if (!transport || !transport.availability) {
+        if (!transport) {
             return res.status(400).json({ error: 'Vehicle is not available' });
         }
 
-        // Check overlaps
         const start = new Date(startTime);
         const end = new Date(endTime);
+
+        if (start >= end) {
+            return res.status(400).json({ error: 'Invalid time range' });
+        }
+
+        const availableSlots = getAvailableSlots(
+            transport.availableFrom,
+            transport.availableTo,
+            transport.bookings
+        );
+
+        const isValidSlot = availableSlots.some(slot => {
+            const s = new Date(slot.start);
+            const e = new Date(slot.end);
+            return start >= s && end <= e;
+        });
+
+        if (!isValidSlot) {
+            return res.status(400).json({
+                error: 'Selected time is not within available slots'
+            });
+        }
+
         const overlapping = await prisma.booking.findFirst({
             where: {
                 transportId,
                 status: { in: ['RESERVED', 'ACTIVE'] },
                 OR: [
-                    { startTime: { lte: end }, endTime: { gte: start } }
+                    {
+                        startTime: { lte: end },
+                        endTime: { gte: start }
+                    }
                 ]
             }
         });
 
         if (overlapping) {
-            return res.status(400).json({ error: 'Vehicle already booked for this time period' });
+            return res.status(400).json({
+                error: 'Vehicle already booked for this time period'
+            });
         }
 
-        // Create a Trip for this booking
         const { booking } = await bookingCreator.create({
             clientId: userId,
             transportId,
@@ -80,16 +116,28 @@ export const reserveVehicle = async (req: Request, res: Response) => {
             endTime: end
         });
 
-        // Write access log
         await accessLogCreator.create({
             userId,
             serviceType: 'RENTAL'
         });
 
         res.status(201).json(booking);
+
     } catch (error: any) {
-        fs.writeFileSync('c:\\SUMMS\\error.log', error.message + '\n' + error.stack);
-        res.status(500).json({ error: 'Failed to reserve vehicle', details: error.message });
+        try {
+            const dir = 'c:\\SUMMS';
+            if (!fsWrapper.existsSync(dir)) {
+                fsWrapper.mkdirSync(dir);
+            }
+            fsWrapper.writeFileSync(`${dir}\\error.log`, error.message + '\n' + error.stack);
+        } catch {
+
+        }
+
+        res.status(500).json({
+            error: 'Failed to reserve vehicle',
+            details: error.message
+        });
     }
 };
 
@@ -178,15 +226,37 @@ export const endRental = async (req: Request, res: Response) => {
             preferredMobility: booking.client.preferredMobility
         });
 
+        const AVERAGE_SPEED_KMH = 30;
+        const distanceKm = (durationMinutes / 60) * AVERAGE_SPEED_KMH;
+
+        let emissionFactorGPerKm = 0;
+        if (booking.transport.car) {
+            emissionFactorGPerKm = booking.transport.car.emissionFactorGPerKm;
+        }
+        else if (booking.transport.scooter) {
+            emissionFactorGPerKm = booking.transport.scooter.emissionFactorGPerKm;
+        }
+
+        const co2Kg = (distanceKm * emissionFactorGPerKm) / 1000;
+
         const updatedBooking = await prisma.booking.update({
             where: { id: bookingId },
             data: {
                 endTime: actualEndTime,
                 duration: durationMinutes,
                 totalCost: pricing.total,
-                status: 'COMPLETED'
+                status: 'COMPLETED',
+                distanceKm,
+                co2Kg
             }
         });
+
+        await prisma.userProfile.update({
+            where: { id: userId },
+            data: {
+                totalCo2Kg: { increment: co2Kg },
+            }
+        })
 
         await vehicleAvailabilityService.updateAvailability({
             transportId: booking.transportId,
@@ -237,9 +307,7 @@ export const payRental = async (req: Request, res: Response) => {
         const [yearRaw, monthRaw] = expiryRaw.split('-');
         const year = Number(yearRaw);
         const month = Number(monthRaw);
-        if (!Number.isFinite(year) || !Number.isFinite(month)) {
-            return res.status(400).json({ error: 'Invalid expiration date format. Use YYYY-MM' });
-        }
+
         const now = new Date();
         const currentYear = now.getFullYear();
         const currentMonth = now.getMonth() + 1;
@@ -306,5 +374,60 @@ export const payRental = async (req: Request, res: Response) => {
         });
     } catch (error: any) {
         res.status(500).json({ error: 'Failed to process payment', details: error.message });
+    }
+};
+
+export const getCo2Summary = async (req: Request, res: Response) => {
+    try {
+        const role = req.user?.role;
+        const userId = req.user?.id;
+        const where: any = {
+            status: 'COMPLETED',
+            co2Kg: { not: null }
+        };
+
+        if (role === 'MOBILITY_PROVIDER' && userId) {
+            where.transport = {
+                is: {
+                    providerId: userId
+                }
+            };
+        } else if (role !== 'ADMIN' && userId) {
+            where.clientId = userId;
+        }
+
+        const bookings = await prisma.booking.findMany({
+            where,
+            include: {
+                transport: {
+                    include: {
+                        car: true,
+                        bike: true,
+                        scooter: true
+                    }
+                }
+            }
+        });
+
+        const summary = bookings.reduce((acc: Record<string, number>, booking: typeof bookings[0]) => {
+            const type = booking.transport.car ? 'car'
+                : booking.transport.scooter ? 'scooter'
+                    : 'bike';
+            acc[type] = (acc[type] || 0) + (booking.co2Kg || 0);
+            acc.total = (acc.total || 0) + (booking.co2Kg || 0);
+            acc.trips = (acc.trips || 0) + 1;
+            return acc;
+        }, {
+            car: 0,
+            bike: 0,
+            scooter: 0,
+            total: 0,
+            trips: 0
+        } as Record<string, number>);
+
+        res.json(summary);
+    }
+    catch (error: any) {
+        res.status(500).json({ error: 'Failed to fetch CO2 summary', details: error.message });
     }
 };

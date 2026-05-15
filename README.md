@@ -1,5 +1,15 @@
 # SUMMS
 
+| Name:              | Student ID | GitHub Username: |
+| ------------------ | ---------- | ---------------- |
+| Adriana Atijas      |40317966   | adrianaatijas     |
+| Akshey Visuvalingam         | 40270505   | Akshey-Visu  |
+| Derek Gallagher    | 40272688   | Derick12345678   |
+| Thi Hong Mai Nguyen | 40248343   | miiyao7         |
+| Alesia Kulagina     | 40260096   | lesyak1  |
+| Joshua Bitton      | 40273378   | Joshua131313       |
+
+
 **SUMMS** is a full‑stack application with an Express/Prisma backend and a React/Vite frontend.
 
 ## Prerequisites

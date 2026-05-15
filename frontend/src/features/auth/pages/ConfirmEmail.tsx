@@ -4,13 +4,18 @@ import { authService } from "../services/authServices";
 import AuthLayout from "../components/AuthLayou";
 import Button from "../../../components/ui/Button/Button";
 
+type ConfirmEmailLocationState = {
+  email?: string;
+};
+
 const ConfirmEmail = () => {
   const location = useLocation();
-  const email = location.state?.email || "";
+  const email = (location.state as ConfirmEmailLocationState | null)?.email || "";
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [cooldown, setCooldown] = useState(0);
+  const getErrorMessage = (error: unknown) => error instanceof Error ? error.message : "Failed to resend email.";
 
   // cooldown 
   useEffect(() => {
@@ -34,8 +39,8 @@ const ConfirmEmail = () => {
 
       setMessage("Confirmation email resent successfully.");
       setCooldown(30);
-    } catch (err: any) {
-      setMessage(err.message || "Failed to resend email.");
+    } catch (error: unknown) {
+      setMessage(getErrorMessage(error));
     } finally {
       setLoading(false);
     }

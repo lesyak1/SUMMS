@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import Input from "../../../components/ui/Input/Input";
 import AuthLayout from "../components/AuthLayou";
 import Button from "../../../components/ui/Button/Button";
@@ -10,16 +10,21 @@ const ForgotPassword = () => {
     const [message, setMessage] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
-    const handleSubmit = async (e: React.SubmitEvent) => {
+    const getErrorMessage = (err: unknown) => err instanceof Error ? err.message : "Something went wrong...";
+
+    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        setLoading(true);
+        setError("");
+        setMessage("");
 
         try {
             await authService.resetPassword(email);
             setMessage("If an account exists, a reset link has been sent.");
 
         }
-        catch (err: any) {
-            setError(err.message || "Something went wrong...")
+        catch (err: unknown) {
+            setError(getErrorMessage(err))
         }
         finally {
             setLoading(false)

@@ -1,5 +1,5 @@
 import { Navigate } from "react-router-dom";
-import { useAuth } from "../../../features/auth/context/AuthContext";
+import { useAuth } from "../../../features/auth/context/useAuth";
 import Navbar from "../Navbar/Navbar";
 
 export const RoleProtectedRoute = ({

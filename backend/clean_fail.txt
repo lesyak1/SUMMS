@@ -1,0 +1,14 @@
+FAIL addVehicle - fails on missing fields/bad setup
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+500 !== 400
+
+    at Object.run (C:\SUMMS\backend\src\tests\providerController.unitTests.ts:123:20)
+    at async runControllerTests (C:\SUMMS\backend\src\tests\controllers.unitTests.ts:35:17) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: 500,
+  expected: 400,
+  operator: 'strictEqual',
+  diff: 'simple'
+}

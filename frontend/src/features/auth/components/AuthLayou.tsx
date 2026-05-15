@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import authLogo from "../../../assets/logoo.png";
 
 interface Props {
     title: string;
@@ -20,17 +21,22 @@ const AuthLayout = ({
     return (
         <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
 
-            <div className="absolute inset-0 bg-gradient-to-br from-sky-200 via-blue-100 to-white" />
+            <div className="absolute inset-0" />
 
             <div className="absolute inset-0 backdrop-blur-[2px]" />
 
-            <div className="relative w-full max-w-md px-8 py-10 rounded-3xl
+            <div className="relative w-full max-w-md px-8 py-18 rounded-3xl
                       bg-white/70 backdrop-blur-xl
                       border border-white/40
                       shadow-[0_20px_50px_rgba(0,0,0,0.15)]">
 
                 <div className="text-center mb-8">
-                    <h1 className="text-2xl font-semibold text-gray-800">
+                    <img
+                        src={authLogo}
+                        alt="SUMMS transport logo"
+                        className="mx-auto mb-4 w-full max-w-[250px]"
+                    />
+                    <h1 className="text-3xl font-semibold text-gray-800">
                         {title}
                     </h1>
                     {subtitle && (

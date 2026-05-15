@@ -5,6 +5,9 @@ const prisma = new PrismaClient();
 async function main() {
     console.log('Seeding database...');
 
+    const now = new Date();
+    const future = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // +7 days
+
     // 1. Create a dummy provider
     const provider = await prisma.mobilityProvider.create({
         data: {
@@ -15,12 +18,23 @@ async function main() {
     console.log('Created provider:', provider.name);
 
     // 2. Create sample vehicles
+
     await prisma.transport.create({
         data: {
             providerId: provider.id,
             costPerMinute: 0.50,
+
+            availableFrom: now,
+            availableTo: future,
             availability: true,
-            car: { create: { model: 'Tesla Model 3' } }
+
+            car: {
+                create: {
+                    model: 'Tesla Model 3',
+                    fuelType: 'electric',
+                    emissionFactorGPerKm: 0
+                }
+            }
         }
     });
 
@@ -28,8 +42,15 @@ async function main() {
         data: {
             providerId: provider.id,
             costPerMinute: 0.15,
+
+            // ✅ REQUIRED
+            availableFrom: now,
+            availableTo: future,
             availability: true,
-            bike: { create: {} }
+
+            bike: {
+                create: {}
+            }
         }
     });
 
@@ -37,8 +58,15 @@ async function main() {
         data: {
             providerId: provider.id,
             costPerMinute: 0.25,
+
+            // ✅ 
+            availableFrom: now,
+            availableTo: future,
             availability: true,
-            scooter: { create: {} }
+
+            scooter: {
+                create: {}
+            }
         }
     });
 
@@ -47,11 +75,13 @@ async function main() {
         data: [
             { status: 'AVAILABLE', location: '100 Main St Level 1 Spot 1' },
             { status: 'AVAILABLE', location: '100 Main St Level 1 Spot 2' },
-            { status: 'AVAILABLE', location: '200 Downtown Ave Spot A' }
+            { status: 'AVAILABLE', location: '200 Downtown Ave Spot A' },
+            { status: 'AVAILABLE', location: 'Yonge St Spot 1' },
+            { status: 'AVAILABLE', location: 'Yonge St Spot 2' }
         ]
     });
 
-    console.log('Database seeded successfully. Note: Users are handled by Supabase Auth and should be registered via UI.');
+    console.log('Database seeded successfully.');
 }
 
 main()

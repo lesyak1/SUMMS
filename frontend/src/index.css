@@ -1,5 +1,7 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
 /*  global css file */
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 
 
 @media (prefers-color-scheme: light) {

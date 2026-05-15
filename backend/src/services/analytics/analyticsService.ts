@@ -80,7 +80,7 @@ export const analyticsService = {
         });
 
         const rentalsByVehicleMap = new Map<string, any>();
-        const usageByCityMap = new Map<string, number>();
+        const usageByCityMap = new Map<string, { count: number; activeRentals: number }>();
 
         let bikeRentals = 0;
         let scooterRentals = 0;
@@ -124,16 +124,22 @@ export const analyticsService = {
             if (vehicleType === 'SCOOTER') scooterRentals += 1;
 
             const bookingCity = booking.client?.city || 'Unknown';
-            usageByCityMap.set(bookingCity, (usageByCityMap.get(bookingCity) || 0) + 1);
+            const usageEntry = usageByCityMap.get(bookingCity) || { count: 0, activeRentals: 0 };
+            usageEntry.count += 1;
+            if (booking.status === 'ACTIVE') {
+                usageEntry.activeRentals += 1;
+            }
+            usageByCityMap.set(bookingCity, usageEntry);
         }
 
         const rentalsByVehicle = Array.from(rentalsByVehicleMap.values()).sort(
             (a, b) => b.rentalCount - a.rentalCount
         );
 
-        const usagePerCity = Array.from(usageByCityMap.entries()).map(([cityName, count]) => ({
+        const usagePerCity = Array.from(usageByCityMap.entries()).map(([cityName, entry]) => ({
             city: cityName,
-            count
+            count: entry.count,
+            activeRentals: entry.activeRentals
         }));
 
         const mostUsedMobilityOption =
@@ -150,6 +156,30 @@ export const analyticsService = {
             }
         };
 
+        const carsCurrentlyRentedWhere: any = {
+            status: 'ACTIVE',
+            transport: {
+                car: { isNot: null }
+            }
+        };
+
+        const scootersCurrentlyRentedWhere: any = {
+            status: 'ACTIVE',
+            transport: {
+                scooter: { isNot: null }
+            }
+        };
+
+        const carsCurrentlyAvailableWhere: any = {
+            availability: true,
+            car: { isNot: null }
+        };
+
+        const bikesCurrentlyAvailableWhere: any = {
+            availability: true,
+            bike: { isNot: null }
+        };
+
         const scootersCurrentlyAvailableWhere: any = {
             availability: true,
             scooter: { isNot: null }
@@ -157,11 +187,31 @@ export const analyticsService = {
 
         if (role === 'MOBILITY_PROVIDER' && providerId) {
             bikesCurrentlyRentedWhere.transport.providerId = providerId;
+            carsCurrentlyRentedWhere.transport.providerId = providerId;
+            scootersCurrentlyRentedWhere.transport.providerId = providerId;
+            carsCurrentlyAvailableWhere.providerId = providerId;
+            bikesCurrentlyAvailableWhere.providerId = providerId;
             scootersCurrentlyAvailableWhere.providerId = providerId;
         }
 
         const bicyclesCurrentlyRented = await prisma.booking.count({
             where: bikesCurrentlyRentedWhere
+        });
+
+        const carsCurrentlyRented = await prisma.booking.count({
+            where: carsCurrentlyRentedWhere
+        });
+
+        const scootersCurrentlyRented = await prisma.booking.count({
+            where: scootersCurrentlyRentedWhere
+        });
+
+        const carsCurrentlyAvailable = await prisma.transport.count({
+            where: carsCurrentlyAvailableWhere
+        });
+
+        const bicyclesCurrentlyAvailable = await prisma.transport.count({
+            where: bikesCurrentlyAvailableWhere
         });
 
         const scootersCurrentlyAvailable = await prisma.transport.count({
@@ -198,10 +248,31 @@ export const analyticsService = {
             },
             requiredMetrics: {
                 bicyclesCurrentlyRented,
+                bicyclesCurrentlyAvailable,
+                carsCurrentlyRented,
+                carsCurrentlyAvailable,
+                scootersCurrentlyRented,
                 scootersCurrentlyAvailable,
                 tripsCompletedToday,
                 mostUsedMobilityOption,
-                usagePerCity
+                usagePerCity,
+                vehicleStatusTable: [
+                    {
+                        type: 'CAR',
+                        rented: carsCurrentlyRented,
+                        available: carsCurrentlyAvailable
+                    },
+                    {
+                        type: 'BIKE',
+                        rented: bicyclesCurrentlyRented,
+                        available: bicyclesCurrentlyAvailable
+                    },
+                    {
+                        type: 'SCOOTER',
+                        rented: scootersCurrentlyRented,
+                        available: scootersCurrentlyAvailable
+                    }
+                ]
             },
             rentalsByVehicle
         };

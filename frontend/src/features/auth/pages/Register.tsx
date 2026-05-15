@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import AuthLayout from "../components/AuthLayou";
 import Input from "../../../components/ui/Input/Input";
 import Button from "../../../components/ui/Button/Button";
 import { authService } from "../services/authServices";
 import { useNavigate } from "react-router-dom";
+import { getErrorMessage } from "../../../lib/apiError";
 
 
 const Register = () => {
@@ -17,7 +18,7 @@ const Register = () => {
 
     const navigate = useNavigate();
 
-    const handleSubmit = async (e: React.SubmitEvent) => {
+    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
         setError("");
@@ -52,8 +53,8 @@ const Register = () => {
             }
 
 
-        } catch (err: any) {
-            setError(err.message || "Registration failed.");
+        } catch (err: unknown) {
+            setError(getErrorMessage(err, "Registration failed."));
         } finally {
             setLoading(false);
         }
@@ -62,7 +63,7 @@ const Register = () => {
     return (
         <AuthLayout
             title="Create an account"
-            subtitle="Start building with SUMMS today."
+            subtitle="Start your journey with seamless access to all your city mobility services."
             footerText="Already have an account?"
             footerLinkText="Login"
             footerLinkTo="/login"
